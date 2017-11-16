@@ -1,0 +1,141 @@
+import arcpy
+import os
+import pythonaddins
+
+
+
+
+class OpenRadarsat(object):
+    """Implementation for GEM1Toolbar_addin.tool1 (Tool)"""
+    def __init__(self):
+        self.enabled = True
+        self.cursor = 3
+        self.shape = "Rectangle"
+    def onRectangle(self, rectangle_geometry):
+
+        mxd = arcpy.mapping.MapDocument("CURRENT")
+        df = arcpy.mapping.ListDataFrames(mxd)[0]
+        sf = arcpy.mapping.ListLayers(df)[0]
+        sr = df.spatialReference
+        poly = makePolyFromExtent(rectangle_geometry, sr)
+        arcpy.SelectLayerByLocation_management(sf, 'INTERSECT', poly)
+        with arcpy.da.SearchCursor(sf, 'RsatID') as cursor:
+             for row in cursor:
+                 basePath = r'T:\Imagery'
+                 RsatID = row[0]
+                 RsatIDvalue = RsatID.lstrip()
+                 year = RsatIDvalue.split("_")[5][:4]
+                 rasterPath = os.path.join(basePath,year,RsatIDvalue)
+                 rasterLyr = RsatID.lstrip()
+                 print 'Adding {} to Data Frame.'.format(rasterLyr)
+                 arcpy.MakeRasterLayer_management(rasterPath, rasterLyr)
+        arcpy.SelectLayerByAttribute_management(sf, 'CLEAR_SELECTION')
+        arcpy.RefreshTOC()
+        arcpy.RefreshActiveView()
+
+class SetLookALike(object):
+    """Implementation for GEM2Toolbar_addin.tool2 (Tool)"""
+    def __init__(self):
+        self.enabled = True
+        self.cursor = 3
+        self.shape = "Rectangle" # Can set to "Line", "Circle" or "Rectangle" for interactive shape drawing and to activate the onLine/Polygon/Circle event sinks.
+
+    def onMouseDown(self, x, y, button, shift):
+        pass
+    def onMouseDownMap(self, x, y, button, shift):
+        pass
+    def onMouseUp(self, x, y, button, shift):
+        pass
+    def onMouseUpMap(self, x, y, button, shift):
+        pass
+    def onMouseMove(self, x, y, button, shift):
+        pass
+    def onMouseMoveMap(self, x, y, button, shift):
+        pass
+    def onDblClick(self):
+        pass
+    def onKeyDown(self, keycode, shift):
+        pass
+    def onKeyUp(self, keycode, shift):
+        pass
+    def deactivate(self):
+        pass
+    def onCircle(self, circle_geometry):
+        pass
+    def onLine(self, line_geometry):
+        pass
+    def onRectangle(self, rectangle_geometry):
+                # Get the current map document, the first data frame and the shapefile.
+        mxd = arcpy.mapping.MapDocument('current')
+        df = arcpy.mapping.ListDataFrames(mxd)[0]
+        sf = arcpy.mapping.ListLayers(df)[0]
+        sr = df.spatialReference
+        poly = makePolyFromExtent(rectangle_geometry, sr)
+        arcpy.SelectLayerByLocation_management(sf, 'INTERSECT', poly)
+        result = pythonaddins.MessageBox('Click OK to hide the selected feature(s)', 'Visible to Invisible', 1)
+        if result == 'OK':
+            with arcpy.da.UpdateCursor(sf,'VISIBLE') as cursor:
+                 for row in cursor:
+                     row[0]=0
+                     cursor.updateRow(row)
+        arcpy.SelectLayerByAttribute_management(sf,'CLEAR_SELECTION')
+        arcpy.RefreshActiveView()
+
+class SetDarkFeature(object):
+    """Implementation for GEM2Toolbar_addin.tool1 (Tool)"""
+    def __init__(self):
+        self.enabled = True
+        self.cursor = 3
+        self.shape = "Rectangle" # Can set to "Line", "Circle" or "Rectangle" for interactive shape drawing and to activate the onLine/Polygon/Circle event sinks.
+    def onMouseDown(self, x, y, button, shift):
+        pass
+    def onMouseDownMap(self, x, y, button, shift):
+        pass
+    def onMouseUp(self, x, y, button, shift):
+        pass
+    def onMouseUpMap(self, x, y, button, shift):
+        pass
+    def onMouseMove(self, x, y, button, shift):
+        pass
+    def onMouseMoveMap(self, x, y, button, shift):
+        pass
+    def onDblClick(self):
+        pass
+    def onKeyDown(self, keycode, shift):
+        pass
+    def onKeyUp(self, keycode, shift):
+        pass
+    def deactivate(self):
+        pass
+    def onCircle(self, circle_geometry):
+        pass
+    def onLine(self, line_geometry):
+        pass
+    def onRectangle(self, rectangle_geometry):
+          # Get the current map document, the first data frame and the shapefile.
+        mxd = arcpy.mapping.MapDocument('current')
+        df = arcpy.mapping.ListDataFrames(mxd)[0]
+        sf = arcpy.mapping.ListLayers(df)[0]
+        sr = df.spatialReference
+        poly = makePolyFromExtent(rectangle_geometry, sr)
+        arcpy.SelectLayerByLocation_management(sf, 'INTERSECT', poly)
+        result = pythonaddins.MessageBox('Click OK to unhide the selected feature(s)', 'Invisible to Visible', 1)
+        if result == 'OK':
+            with arcpy.da.UpdateCursor(sf,'VISIBLE') as cursor:
+                for row in cursor:
+                     row[0]=1
+                     cursor.updateRow(row)
+        arcpy.SelectLayerByAttribute_management(sf,'CLEAR_SELECTION')
+        arcpy.RefreshActiveView()
+
+# Makes a polygon with the rectangle extent from the tool
+def makePolyFromExtent(ext, sr):
+    """makes an arcpy polygon object from an input extent object.
+    Returns a polygon geometry object."""
+    array = arcpy.Array()
+    array.add(ext.lowerLeft)
+    array.add(ext.lowerRight)
+    array.add(ext.upperRight)
+    array.add(ext.upperLeft)
+    array.add(ext.lowerLeft)
+    return arcpy.Polygon(array, sr)
